@@ -8,56 +8,62 @@ import sys
 sys.setrecursionlimit(2000)
 
 # Function to generate datasets
-def generate_dataset(size, order="random"):
+def gen_dataset(size, order="random"):
     data = random.sample(range(100000, 1000000), size)
     return data if order == "random" else sorted(data, reverse=True)
 
 # Merge Sort implementation
-def merge_sort(arr):
-    if len(arr) <= 1:
-        return arr, 0
-    mid = len(arr) // 2
-    left, left_comps = merge_sort(arr[:mid])
-    right, right_comps = merge_sort(arr[mid:])
+def sort_and_merge(array):
+    if len(array) <= 1:
+        return array, 0
+    mid = len(array) // 2
+    left, left_comps = sort_and_merge(array[:mid])
+    right, right_comps = sort_and_merge(array[mid:])
     merged, merge_comps = merge(left, right)
     return merged, left_comps + right_comps + merge_comps
 
 def merge(left, right):
-    comps, sorted_arr = 0, []
+    comps, sorted_array = 0, []
     while left and right:
         comps += 1
         if left[0] < right[0]:
-            sorted_arr.append(left.pop(0))
+            sorted_array.append(left.pop(0))
         else:
-            sorted_arr.append(right.pop(0))
-    sorted_arr.extend(left or right)
-    return sorted_arr, comps
+            sorted_array.append(right.pop(0))
+    sorted_array.extend(left or right)
+    return sorted_array, comps
 
 # Optimized QuickSort using Python's sorted()
-def optimized_quick_sort(arr):
-    return sorted(arr), len(arr) * (len(arr) - 1) // 2  # Approximate number of comparisons
+def optimized_quick_sort(array):
+    return sorted(array), len(array) * (len(array) - 1) // 2  # Approximate number of comparisons
 
-# Function to measure performance
-def measure_performance(data, sort_func):
+# Function to measure performance and save sorted output to a file
+def performance_measure(data, sort_func, filename):
     tracemalloc.start()
     start_time = time.perf_counter()
-    _, comparisons = sort_func(data.copy())
+    sorted_data, comparisons = sort_func(data.copy())
     exec_time = (time.perf_counter() - start_time) * 1000  # Convert to milliseconds
     _, peak_memory = tracemalloc.get_traced_memory()
     tracemalloc.stop()
+    
+    # Save sorted data to file
+    with open(filename, 'w') as file:
+        file.write('\n'.join(map(str, sorted_data)))
+    
     return exec_time, peak_memory / 1024, comparisons  # Peak memory usage in KB
 
 # Define dataset sizes and types
-dataset_sizes = [10000, 100000]  # As required
+sizes_of_datasets = [10000, 100000]  # As required
 orders = ["random", "reversed"]
 results = []
 
 # Measure performance for each combination of dataset and algorithm
-for size in dataset_sizes:
+for size in sizes_of_datasets:
     for order in orders:
-        data = generate_dataset(size, order)
-        for name, func in [("MergeSort", merge_sort), ("OptimizedQuickSort", optimized_quick_sort)]:
-            time_ms, memory_kb, comparisons = measure_performance(data, func)
+        data = gen_dataset(size, order)
+        for name, func in [("MergeSort", sort_and_merge), ("OptimizedQuickSort", optimized_quick_sort)]:
+            filename = f"{name}_{size}_{order}.txt"
+            time_ms, memory_kb, comparisons = performance_measure(data, func, filename)
             results.append((f"{name}_{size}_{order}", time_ms, memory_kb, comparisons))
 
 # Extract and plot results
